@@ -12,7 +12,7 @@ $chat_id = $update["message"]["chat"]["id"];
 $message = $update["message"];
 
 // 🧑‍💻 Faqat sizning ID’ingiz (siz /start bosganingizda ID chiqadi, hozircha vaqtincha 8324379957 qo‘yamiz)
-$admin_id = 8324379957;
+$admin_id = 8407867437;
 
 $dbFile = __DIR__ . "/films.json";
 if (!file_exists($dbFile)) file_put_contents($dbFile, "{}");
