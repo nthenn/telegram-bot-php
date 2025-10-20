@@ -1,70 +1,78 @@
 <?php
-// 🎬 Hiddenkino Bot (kino raqam orqali topuvchi versiya)
+// 🎬 HiddenKino Bot — Telegram ichidagi kinolarni saqlash va yuborish
 
-// Token
 $botToken = "8324379957:AAG3NTnOJFzvO7IesQ9jMXgP7uXBUFTXAEk";
 $api = "https://api.telegram.org/bot$botToken/";
 
-// 🔸 Kino bazasi uchun JSON fayl (Render’da ham saqlanadi)
-$dbFile = __DIR__ . "/movies.json";
+// Baza (saqlangan kinolar ro'yxati)
+$dbFile = DIR . "/films.json";
 if (!file_exists($dbFile)) file_put_contents($dbFile, "{}");
 
-// 🔸 Telegram so‘rovini o‘qish
 $update = json_decode(file_get_contents("php://input"), true);
 
-// 🔸 Brauzerda ochilganda test uchun
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    echo "✅ Hiddenkino bot (kino versiyasi) ishlayapti.";
+    echo "✅ HiddenKino bot ishlayapti!";
     exit;
 }
 
-// 🔸 Foydalanuvchi xabari
 if (isset($update["message"])) {
     $msg = $update["message"];
     $chatId = $msg["chat"]["id"];
     $text = trim($msg["text"] ?? "");
+    $video = $msg["video"]["file_id"] ?? null;
 
-    // /start
-    if ($text === "/start") {
-        send($chatId, "👋 Salom! Men @Hiddenkino_bot.\n🎥 Kinoning raqamini yozing (#413 kabi), men topib beraman!");
-        exit;
-    }
-
-    // /add (faqat siz qo‘shasiz)
-    if (strpos($text, "/add") === 0) {
-        // Format: /add 413 | Nom | Link
-        if (preg_match('/^\/add\s+(\d+)\s*\|\s*(.+?)\s*\|\s*(https?:\/\/\S+)/', $text, $m)) {
-            [$all, $id, $title, $url] = $m;
+    // 🎥 Agar video yuborilgan bo‘lsa (film qo‘shish uchun)
+    if ($video) {
+        $caption = $msg["caption"] ?? "";
+        if (preg_match('/#(\d+)/', $caption, $m)) {
+            $id = $m[1];
             $db = json_decode(file_get_contents($dbFile), true);
-            $db[$id] = ["title" => $title, "url" => $url];
-            file_put_contents($dbFile, json_encode($db, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT));
-            send($chatId, "✅ Kino qo‘shildi: #$id — $title");
+            $db[$id] = $video;
+            file_put_contents($dbFile, json_encode($db, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            send($chatId, "✅ Film #$id saqlandi!");
         } else {
-            send($chatId, "❗ Format noto‘g‘ri!\nTo‘g‘ri: /add 413 | Kino nomi | https://link");
+            send($chatId, "ℹ️ Film qo‘shish uchun video captioniga masalan: #413 deb yozing.");
         }
         exit;
     }
 
-    // #raqam yuborilsa
+    // 👋 /start buyrug‘i
+    if ($text === "/start") {
+        send($chatId, "👋 Salom! Menga kino raqamini yozing (#123 kabi), men sizga filmni yuboraman!");
+        exit;
+    }
+
+    // 🔍 Kino raqami orqali qidirish (#123)
     if (preg_match('/#(\d+)/', $text, $m)) {
         $id = $m[1];
         $db = json_decode(file_get_contents($dbFile), true);
+
         if (isset($db[$id])) {
-            $film = $db[$id];
-            send($chatId, "🎬 {$film['title']} (#$id)\n📽️ {$film['url']}");
+            $file_id = $db[$id];
+            sendVideo($chatId, $file_id, "🎬 Film #$id");
         } else {
-            send($chatId, "❌ #$id kodi topilmadi.");
+            send($chatId, "❌ Film topilmadi: #$id");
         }
         exit;
     }
 
-    // Boshqa so‘zlar
-    send($chatId, "ℹ️ Kino topish uchun raqam yuboring (#413) yoki yangi kino qo‘shing (/add).");
+    // Boshqa hollarda
+    send($chatId, "ℹ️ Kino olish uchun #raqam yozing yoki yangi video yuboring (#ID bilan captionda).");
 }
 
-// 🔸 Xabar yuboruvchi yordamchi funksiya
 function send($chatId, $text) {
     global $api;
     file_get_contents($api . "sendMessage?chat_id=$chatId&text=" . urlencode($text));
+}
+
+function sendVideo($chatId, $file_id, $caption = "") {
+    global $api;
+    $data = [
+        'chat_id' => $chatId,
+        'video' => $file_id,
+        'caption' => $caption
+    ];
+    $options = ['http' => ['method' => 'POST', 'header' => "Content-Type: application/x-www-form-urlencoded\r\n", 'content' => http_build_query($data)]];
+    file_get_contents($api . "sendVideo", false, stream_context_create($options));
 }
 ?>
