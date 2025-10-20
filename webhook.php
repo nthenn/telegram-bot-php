@@ -5,7 +5,7 @@ $botToken = "8324379957:AAG3NTnOJFzvO7IesQ9jMXgP7uXBUFTXAEk";
 $api = "https://api.telegram.org/bot$botToken/";
 
 // Baza (saqlangan kinolar ro'yxati)
-$dbFile = DIR . "/films.json";
+$dbFile = __DIR__ . "/films.json";
 if (!file_exists($dbFile)) file_put_contents($dbFile, "{}");
 
 $update = json_decode(file_get_contents("php://input"), true);
