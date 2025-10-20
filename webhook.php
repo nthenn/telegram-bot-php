@@ -14,7 +14,7 @@ $message = $update["message"];
 // 🧑‍💻 Faqat sizning ID’ingiz (siz /start bosganingizda ID chiqadi, hozircha vaqtincha 8324379957 qo‘yamiz)
 $admin_id = 8324379957;
 
-$dbFile = DIR . "/films.json";
+$dbFile = __DIR__ . "/films.json";
 if (!file_exists($dbFile)) file_put_contents($dbFile, "{}");
 $films = json_decode(file_get_contents($dbFile), true);
 
